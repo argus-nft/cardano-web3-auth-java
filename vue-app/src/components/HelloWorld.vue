@@ -1,6 +1,6 @@
 <template>
   <button @click="connect">Connect Eternl</button>
-  <button @click="sign">Sign</button>
+  <button @click="sign">Login</button>
 </template>
 
 <script>
@@ -40,6 +40,8 @@ export default {
 
       const baseAddress = BaseAddress.from_address(Address.from_bytes(addressHex))        .to_address()        .to_bech32();
       console.log(baseAddress);
+
+      await fetch('http://localhost:8080/utxos/' + baseAddress.toString());
 
       const foo = Buffer.from('Hello World!');
       const signedData = await this.wallet.signData(baseAddress, foo.toString('hex'));
