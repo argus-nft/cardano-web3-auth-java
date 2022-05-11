@@ -6,13 +6,18 @@ import com.bloxbean.cardano.client.api.exception.ApiException;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.api.AddressService;
 import com.bloxbean.cardano.client.backend.model.AddressContent;
+import com.bloxbean.cardano.client.cip.cip30.CIP30DataSigner;
+import com.bloxbean.cardano.client.cip.cip30.DataSignature;
+import com.bloxbean.cardano.client.cip.cip8.COSESign1;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.client.util.Tuple;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/auth")
 public class LoginController {
 
     private final static Integer POLICY_ID_LENGTH = 56;
@@ -28,8 +33,18 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public void createEntity(@RequestBody Login login) {
-        logger.info(login.getCoseObject());
+    public void createEntity(@RequestBody Login login) throws JsonProcessingException {
+        logger.info("HELLO");
+        logger.info(login.getDataSignature());
+        logger.info(login.getBaseAddress());
+        logger.info(login.getMessage());
+
+        //Load signature
+        DataSignature dataSignature = DataSignature.from(login.getDataSignature());
+        //verify
+        boolean verified = CIP30DataSigner.INSTANCE.verify(dataSignature);
+        logger.info(String.format("Verified? %s", verified));
+
     }
 
     @GetMapping("/utxos/{baseAddress}")
@@ -49,7 +64,7 @@ public class LoginController {
                     String assetName = new String(HexUtil.decodeHexString(assetNameHex));
                     return new Tuple(policyId, assetName);
                 })
-                .forEach(tuple -> System.out.println(String.format("%s %s", tuple._1, tuple._2)));
+                .forEach(tuple -> System.out.printf("%s %s%n", tuple._1, tuple._2));
     }
 
 }

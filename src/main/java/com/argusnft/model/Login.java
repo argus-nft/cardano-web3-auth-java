@@ -2,33 +2,16 @@ package com.argusnft.model;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Value;
 
-import java.util.Objects;
-
+@Value
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class Login {
 
-    private String coseObject;
+    String message;
 
-    public String getCoseObject() {
-        return coseObject;
-    }
+    String baseAddress;
 
-    public void setCoseObject(String coseObject) {
-        this.coseObject = coseObject;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Login login = (Login) o;
-        return Objects.equals(coseObject, login.coseObject);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(coseObject);
-    }
+    String dataSignature;
 
 }

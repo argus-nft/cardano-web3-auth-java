@@ -1,5 +1,5 @@
 <template>
-  <button @click="connect">Connect Eternl</button>
+  <button @click="connect">Connect Nami</button>
   <button @click="sign">Login</button>
 </template>
 
@@ -27,26 +27,51 @@ export default {
       console.log(this.wallet);
       // console.log(cardano);
       // eslint-disable-next-line no-undef
-      this.wallet = await cardano["eternl"].enable();
+      this.wallet = await cardano["nami"].enable();
       console.log(this.wallet);
     },
     async sign() {
-
-      console.log('hi')
+      console.log("hi");
 
       const addresses = await this.wallet.getUsedAddresses();
 
       const addressHex = Buffer.from(addresses[0], "hex");
 
-      const baseAddress = BaseAddress.from_address(Address.from_bytes(addressHex))        .to_address()        .to_bech32();
+      const address = BaseAddress.from_address(
+        Address.from_bytes(addressHex)
+      )
+        .to_address()
+
+      const baseAddress = address.to_bech32();
+      console.log(address);
       console.log(baseAddress);
 
-      await fetch('http://localhost:8080/utxos/' + baseAddress.toString());
+      await fetch("http://localhost:8080/utxos/" + baseAddress.toString());
 
-      const foo = Buffer.from('Hello World!');
-      const signedData = await this.wallet.signData(baseAddress, foo.toString('hex'));
+      const foo = Buffer.from("Hello World!");
+      console.log("before sign");
 
+      const signedData = await this.wallet.signData(
+        addresses[0],
+        foo.toString("hex")
+      );
+      console.log("after sign");
       console.log(signedData);
+
+      const res = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: foo.toString("hex"),
+          base_address: baseAddress.toString(),
+          data_signature: JSON.stringify(signedData),
+        }),
+      });
+
+      console.log(res);
     },
   },
 };
