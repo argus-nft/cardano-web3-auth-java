@@ -1,6 +1,16 @@
 <template>
   <button @click="connect">Connect Nami</button>
   <button @click="sign">Login</button>
+<div>
+ <div>Selected: {{ adahandleSelected }}</div>
+
+  <select v-model="adahandleSelected">
+    <option v-for="handle in adahandles" :key="handle" :value="handle">
+      {{ handle }}
+    </option>
+  </select>
+</div>
+
 </template>
 
 <script>
@@ -19,6 +29,8 @@ export default {
     return {
       count: 0,
       wallet: null,
+      adahandleSelected: null,
+      adahandles: [],
     };
   },
   methods: {
@@ -29,6 +41,31 @@ export default {
       // eslint-disable-next-line no-undef
       this.wallet = await cardano["nami"].enable();
       console.log(this.wallet);
+
+      const addresses = await this.wallet.getUsedAddresses();
+
+      const addressHex = Buffer.from(addresses[0], "hex");
+
+      const address = BaseAddress.from_address(
+        Address.from_bytes(addressHex)
+      )
+        .to_address()
+
+      const baseAddress = address.to_bech32();
+      console.log(address);
+      console.log(baseAddress);
+
+      const response = await fetch("http://localhost:8080/auth/adahandles?base_address=" + baseAddress.toString(),{
+         headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+      const handles = await response.json();
+      console.log(handles);
+      this.adahandles = handles;
+      console.log(this.adahandles);
+
     },
     async sign() {
       console.log("hi");
@@ -45,8 +82,6 @@ export default {
       const baseAddress = address.to_bech32();
       console.log(address);
       console.log(baseAddress);
-
-      await fetch("http://localhost:8080/utxos/" + baseAddress.toString());
 
       const foo = Buffer.from("Hello World!");
       console.log("before sign");

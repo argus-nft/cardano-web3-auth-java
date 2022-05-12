@@ -8,6 +8,8 @@ import lombok.Value;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class Login {
 
+    String adahandle;
+
     String message;
 
     String baseAddress;
