@@ -16,9 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,6 +26,8 @@ public class LoginController {
     private static final String ADAHANDLE_POLICY_ID = "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a";
 
     private final static Integer POLICY_ID_LENGTH = 56;
+
+    private final static String WEBSITE = "web3auth.coolwebsite.com";
 
     private final static Map<String, String> MESSAGES = new HashMap<>();
 
@@ -43,20 +43,22 @@ public class LoginController {
 
     @PostMapping("/login")
     public void login(@RequestBody Login login) throws JsonProcessingException {
-
         //Load signature
         DataSignature dataSignature = DataSignature.from(login.getDataSignature());
         //verify
         boolean verified = CIP30DataSigner.INSTANCE.verify(dataSignature);
         logger.info(String.format("Verified? %s", verified));
-
     }
 
-    @GetMapping("/message/{adahandle}")
-    public String getMessage(@PathVariable String adahandle) throws ApiException {
+    @GetMapping("/nonce")
+    public String getNonce(@RequestParam("base_address") String baseAddress, @RequestParam(value = "ada_handle", required = false) Optional<String> adahandle) throws ApiException {
         String timestamp = String.valueOf(System.currentTimeMillis());
-        MESSAGES.put(adahandle, timestamp);
-        return String.format("%s;%s", adahandle, timestamp);
+        String nonce = String.format("%s;%s", WEBSITE, timestamp);
+        if (adahandle.isPresent()) {
+            nonce = String.format("%s;adaHandle:%s", nonce, adahandle.get());
+        }
+        MESSAGES.put(baseAddress, nonce);
+        return nonce;
     }
 
     @GetMapping("/utxos/{baseAddress}")
@@ -68,7 +70,7 @@ public class LoginController {
                 .getValue()
                 .getAmount()
                 .stream()
-                .map(foo -> foo.getUnit())
+                .map(TxContentOutputAmount::getUnit)
                 .filter(foo -> foo.startsWith(ADAHANDLE_POLICY_ID))
                 .map(foo -> {
                     String policyId = foo.substring(0, POLICY_ID_LENGTH);

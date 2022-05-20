@@ -1,6 +1,6 @@
 <template>
   <button @click="connect">Connect Nami</button>
-  <button @click="sign">Login</button>
+  <button @click="login">Login</button>
   <div>
     <div v-if="wallet != null">
       <div>Picked: {{ authMethod }}</div>
@@ -61,6 +61,7 @@ export default {
       wallet: null,
       adahandleSelected: null,
       adahandles: [],
+      walletBaseAddress: null,
     };
   },
   methods: {
@@ -84,6 +85,8 @@ export default {
       console.log(address);
       console.log(baseAddress);
 
+      this.walletBaseAddress = baseAddress;
+
       const response = await fetch(
         "http://localhost:8080/auth/adahandles?base_address=" +
           baseAddress.toString(),
@@ -98,6 +101,39 @@ export default {
       console.log(handles);
       this.adahandles = handles;
       console.log(this.adahandles);
+    },
+    async login() {
+      if (this.authMethod == "base_address") {
+        const res = await fetch(
+          "http://localhost:8080/auth/nonce?base_address=" +
+            this.walletBaseAddress,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const body = await res.text();
+        console.log(body);
+      } else if (this.authMethod == "ada_handle") {
+        const res = await fetch(
+          "http://localhost:8080/auth/nonce?base_address=" +
+            this.walletBaseAddress +
+            "&ada_handle=" +
+            this.adahandleSelected,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const body = await res.text();
+        console.log(body);
+      }
     },
     async sign() {
       console.log("hi");
