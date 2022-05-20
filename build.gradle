@@ -11,9 +11,14 @@ sourceCompatibility = '11'
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots"
-    }
+    // Cardano JAva llib
+//    maven {
+//        url "https://oss.sonatype.org/content/repositories/snapshots"
+//    }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 dependencies {
@@ -22,6 +27,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
+    // Hex stuff
+    implementation 'commons-codec:commons-codec'
+
     // Lombok
     annotationProcessor("org.projectlombok:lombok")
     implementation 'org.projectlombok:lombok'
@@ -29,7 +37,7 @@ dependencies {
     // JWT Stuff
     implementation 'com.auth0:java-jwt:3.19.1'
 
-    implementation 'com.bloxbean.cardano:cardano-client-lib:0.2.0-beta4-SNAPSHOT'
-    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.2.0-beta4-SNAPSHOT'
+    implementation 'com.bloxbean.cardano:cardano-client-lib:0.2.0'
+    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.2.0'
 
 }

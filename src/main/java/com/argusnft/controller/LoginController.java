@@ -2,6 +2,8 @@ package com.argusnft.controller;
 
 import com.argusnft.model.Login;
 import com.argusnft.services.BlockfrostService;
+import com.argusnft.services.JwtService;
+import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.api.exception.ApiException;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.api.AddressService;
@@ -14,6 +16,8 @@ import com.bloxbean.cardano.client.util.Tuple;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -37,25 +41,54 @@ public class LoginController {
 
     private final BlockfrostService blockfrostService;
 
-    public LoginController(BlockfrostService blockfrostService) {
+    private final JwtService jwtService;
+
+    public LoginController(BlockfrostService blockfrostService, JwtService jwtService) {
         this.blockfrostService = blockfrostService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
-    public void login(@RequestBody Login login) throws JsonProcessingException {
+    public ResponseEntity<String> login(@RequestBody Login login) throws JsonProcessingException {
         //Load signature
-        DataSignature dataSignature = DataSignature.from(login.getDataSignature());
+        System.out.println(login.getDataSignature());
+        DataSignature tmpSignature = DataSignature.from(login.getDataSignature());
+        DataSignature dataSignature = new DataSignature(tmpSignature.signature(), tmpSignature.key());
+
+
+        Address address = new Address(dataSignature.address());
+        String s = address.toBech32();
+
+        System.out.println(s);
+
+        String nonce = MESSAGES.get(s);
+        System.out.println("nonce: " + nonce);
+
+        Optional<String> adaHandle = Arrays.stream(nonce
+                        .split(";"))
+                .filter(stuff -> stuff.trim().startsWith("ada_handle"))
+                .findFirst()
+                .map(handle -> handle.split(":")[1]);
+
+        System.out.println(nonce.equals(new String(dataSignature.coseSign1().payload())));
+
         //verify
         boolean verified = CIP30DataSigner.INSTANCE.verify(dataSignature);
         logger.info(String.format("Verified? %s", verified));
+
+        Optional<String> token = jwtService.createToken(s, adaHandle);
+
+        return token.map(value -> new ResponseEntity<>(value, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.BAD_REQUEST));
+
     }
 
     @GetMapping("/nonce")
     public String getNonce(@RequestParam("base_address") String baseAddress, @RequestParam(value = "ada_handle", required = false) Optional<String> adahandle) throws ApiException {
+        logger.info("base_address: " + baseAddress);
         String timestamp = String.valueOf(System.currentTimeMillis());
         String nonce = String.format("%s;%s", WEBSITE, timestamp);
         if (adahandle.isPresent()) {
-            nonce = String.format("%s;adaHandle:%s", nonce, adahandle.get());
+            nonce = String.format("%s;ada_handle:%s", nonce, adahandle.get());
         }
         MESSAGES.put(baseAddress, nonce);
         return nonce;

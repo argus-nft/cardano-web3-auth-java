@@ -1,6 +1,7 @@
 <template>
   <button @click="connect">Connect Nami</button>
-  <button @click="login">Login</button>
+  <button @click="login" :disabled="jwtToken != null">Login</button>
+  <button @click="logout" :disabled="jwtToken == null">Logout</button>
   <div>
     <div v-if="wallet != null">
       <div>Picked: {{ authMethod }}</div>
@@ -62,6 +63,7 @@ export default {
       adahandleSelected: null,
       adahandles: [],
       walletBaseAddress: null,
+      jwtToken: null,
     };
   },
   methods: {
@@ -103,6 +105,8 @@ export default {
       console.log(this.adahandles);
     },
     async login() {
+      let messageToSign;
+
       if (this.authMethod == "base_address") {
         const res = await fetch(
           "http://localhost:8080/auth/nonce?base_address=" +
@@ -115,8 +119,8 @@ export default {
             },
           }
         );
-        const body = await res.text();
-        console.log(body);
+        messageToSign = await res.text();
+        console.log(messageToSign);
       } else if (this.authMethod == "ada_handle") {
         const res = await fetch(
           "http://localhost:8080/auth/nonce?base_address=" +
@@ -131,9 +135,33 @@ export default {
             },
           }
         );
-        const body = await res.text();
-        console.log(body);
+        messageToSign = await res.text();
+        console.log(messageToSign);
       }
+
+      const addresses = await this.wallet.getUsedAddresses();
+
+      const signedData = await this.wallet.signData(
+        addresses[0],
+        Buffer.from(messageToSign).toString("hex")
+      );
+
+      console.log('signed data');
+      console.log(signedData);
+
+      const res = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data_signature: JSON.stringify(signedData),
+        }),
+      });
+
+      const jwtToken = await res.text();
+      console.log(jwtToken);
     },
     async sign() {
       console.log("hi");
