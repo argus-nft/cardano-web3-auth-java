@@ -1,16 +1,46 @@
 <template>
   <button @click="connect">Connect Nami</button>
   <button @click="sign">Login</button>
-<div>
- <div>Selected: {{ adahandleSelected }}</div>
+  <div>
+    <div v-if="wallet != null">
+      <div>Picked: {{ authMethod }}</div>
 
-  <select v-model="adahandleSelected">
-    <option v-for="handle in adahandles" :key="handle" :value="handle">
-      {{ handle }}
-    </option>
-  </select>
-</div>
+      <input
+        type="radio"
+        id="baseAddress"
+        value="base_address"
+        v-model="authMethod"
+      />
+      <label for="baseAddress">Base Address</label>
 
+      <input
+        type="radio"
+        id="adaHandle"
+        value="ada_handle"
+        v-model="authMethod"
+      />
+      <label for="adaHandle">Ada Handle</label>
+
+      <input
+        type="radio"
+        id="walletAmount"
+        value="wallet_amount"
+        v-model="authMethod"
+        disabled
+      />
+      <label for="walletAmount">Wallet Amount</label>
+    </div>
+
+    <div v-if="authMethod == 'ada_handle'">
+      <div>Selected: {{ adahandleSelected }}</div>
+
+      <select v-model="adahandleSelected">
+        <option v-for="handle in adahandles" :key="handle" :value="handle">
+          {{ handle }}
+        </option>
+      </select>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -27,7 +57,7 @@ export default {
   },
   data() {
     return {
-      count: 0,
+      authMethod: "base_address",
       wallet: null,
       adahandleSelected: null,
       adahandles: [],
@@ -48,24 +78,26 @@ export default {
 
       const address = BaseAddress.from_address(
         Address.from_bytes(addressHex)
-      )
-        .to_address()
+      ).to_address();
 
       const baseAddress = address.to_bech32();
       console.log(address);
       console.log(baseAddress);
 
-      const response = await fetch("http://localhost:8080/auth/adahandles?base_address=" + baseAddress.toString(),{
-         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        "http://localhost:8080/auth/adahandles?base_address=" +
+          baseAddress.toString(),
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const handles = await response.json();
       console.log(handles);
       this.adahandles = handles;
       console.log(this.adahandles);
-
     },
     async sign() {
       console.log("hi");
@@ -76,8 +108,7 @@ export default {
 
       const address = BaseAddress.from_address(
         Address.from_bytes(addressHex)
-      )
-        .to_address()
+      ).to_address();
 
       const baseAddress = address.to_bech32();
       console.log(address);
