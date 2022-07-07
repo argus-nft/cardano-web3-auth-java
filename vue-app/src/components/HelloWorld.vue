@@ -1,7 +1,9 @@
 <template>
-  <button @click="connect">Connect Nami</button>
-  <button @click="login" :disabled="jwtToken != null">Login</button>
-  <button @click="logout" :disabled="jwtToken == null">Logout</button>
+  <div>
+      <button @click="connect">Connect Nami</button>
+      <button @click="login" :disabled="jwtToken != null">Login</button>
+      <button @click="logout" :disabled="jwtToken == null">Logout</button>
+  </div>
   <div>
     <div v-if="wallet != null">
       <div>Picked: {{ authMethod }}</div>
@@ -40,6 +42,10 @@
           {{ handle }}
         </option>
       </select>
+    </div>
+    <div>
+        <button @click="invoke('/public/endpoint')">Hit public endpoint</button>
+        <button @click="invoke('/secured/endpoint')">Hit secured endpoint</button>
     </div>
   </div>
 </template>
@@ -161,6 +167,7 @@ export default {
       });
 
       const jwtToken = await res.text();
+      this.jwtToken = jwtToken;
       console.log(jwtToken);
     },
     async sign() {
@@ -203,6 +210,44 @@ export default {
 
       console.log(res);
     },
+    async invoke(path) {
+
+
+        console.log('About to hit hit: ' + path)
+        console.log('jwtToken: ' + this.jwtToken)
+
+        try {
+
+          var res = null;
+          const token = this.jwtToken;
+          if (this.jwtToken != null) {
+          res = await fetch('http://localhost:8080' + path, {
+            method: "GET",
+            headers: {
+              Authorization: 'Bearer ' + token
+            },
+          });  
+          } else {
+             res = await fetch('http://localhost:8080' + path);
+          }
+
+          
+
+          const status = res.status;
+          const txt = await res.text();
+
+          console.log('status: ' + status);
+          console.log('txt: ' + txt);
+        } catch (e) {
+          
+          const status = e.status
+          console.log('status: ' + status);
+          // console.log('txt: ' + txt);
+
+        }
+        
+
+    }
   },
 };
 </script>

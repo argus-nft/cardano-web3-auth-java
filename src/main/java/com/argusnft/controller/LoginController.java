@@ -55,30 +55,34 @@ public class LoginController {
         DataSignature tmpSignature = DataSignature.from(login.getDataSignature());
         DataSignature dataSignature = new DataSignature(tmpSignature.signature(), tmpSignature.key());
 
-
         Address address = new Address(dataSignature.address());
         String s = address.toBech32();
 
         System.out.println(s);
 
-        String nonce = MESSAGES.get(s);
-        System.out.println("nonce: " + nonce);
+        Optional<String> nonceOpt = Optional.of(MESSAGES.get(s));
+        if (nonceOpt.isPresent()) {
+            String nonce = nonceOpt.get();
+            System.out.println("nonce: " + nonce);
 
-        Optional<String> adaHandle = Arrays.stream(nonce
-                        .split(";"))
-                .filter(stuff -> stuff.trim().startsWith("ada_handle"))
-                .findFirst()
-                .map(handle -> handle.split(":")[1]);
+            Optional<String> adaHandle = Arrays.stream(nonce
+                            .split(";"))
+                    .filter(stuff -> stuff.trim().startsWith("ada_handle"))
+                    .findFirst()
+                    .map(handle -> handle.split(":")[1]);
 
-        System.out.println(nonce.equals(new String(dataSignature.coseSign1().payload())));
+            System.out.println(nonce.equals(new String(dataSignature.coseSign1().payload())));
 
-        //verify
-        boolean verified = CIP30DataSigner.INSTANCE.verify(dataSignature);
-        logger.info(String.format("Verified? %s", verified));
+            //verify
+            boolean verified = CIP30DataSigner.INSTANCE.verify(dataSignature);
+            logger.info(String.format("Verified? %s", verified));
 
-        Optional<String> token = jwtService.createToken(s, adaHandle);
+            Optional<String> token = jwtService.createToken(s, adaHandle);
 
-        return token.map(value -> new ResponseEntity<>(value, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.BAD_REQUEST));
+            return token.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.badRequest().build());
+        } else {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
     }
 
@@ -104,10 +108,10 @@ public class LoginController {
                 .getAmount()
                 .stream()
                 .map(TxContentOutputAmount::getUnit)
-                .filter(foo -> foo.startsWith(ADAHANDLE_POLICY_ID))
-                .map(foo -> {
-                    String policyId = foo.substring(0, POLICY_ID_LENGTH);
-                    String assetNameHex = foo.substring(POLICY_ID_LENGTH);
+                .filter(assetId -> assetId.startsWith(ADAHANDLE_POLICY_ID))
+                .map(assetId -> {
+                    String policyId = assetId.substring(0, POLICY_ID_LENGTH);
+                    String assetNameHex = assetId.substring(POLICY_ID_LENGTH);
                     String assetName = new String(HexUtil.decodeHexString(assetNameHex));
                     return new Tuple(policyId, assetName);
                 })
@@ -123,10 +127,10 @@ public class LoginController {
                 .getAmount()
                 .stream()
                 .map(TxContentOutputAmount::getUnit)
-                .filter(unit -> unit.startsWith(ADAHANDLE_POLICY_ID))
-                .map(unit -> {
+                .filter(assetId -> assetId.startsWith(ADAHANDLE_POLICY_ID))
+                .map(assetId -> {
 //                    String policyId = foo.substring(0, POLICY_ID_LENGTH);
-                    String assetNameHex = unit.substring(POLICY_ID_LENGTH);
+                    String assetNameHex = assetId.substring(POLICY_ID_LENGTH);
                     String assetName = new String(HexUtil.decodeHexString(assetNameHex));
                     System.out.println(assetName);
                     return assetName;
