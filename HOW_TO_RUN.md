@@ -20,3 +20,4 @@ You can now open `http://localhost:3000` with your favourite browser and have so
 
 ## Blockfrost key
 
+Signup on [Blockfrost](https://blockfrost.io/) and get your testnet/mainnet api key, and set it in the `application.properties` file.
